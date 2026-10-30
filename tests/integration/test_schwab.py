@@ -82,6 +82,53 @@ async def test_token_failure_does_not_leak_body(settings):
     await client.aclose()
 
 
+@pytest.mark.parametrize(
+    "registered,returned",
+    [
+        ("https://127.0.0.1", "https://127.0.0.1/"),
+        ("https://127.0.0.1/", "https://127.0.0.1"),
+    ],
+)
+async def test_oauth_root_callback_preserves_registered_token_redirect(settings, registered, returned):
+    s = auth_settings(settings).model_copy(update={"schwab_redirect_uri": registered})
+    requests = []
+
+    def handle(request):
+        requests.append(request)
+        return httpx.Response(
+            200, json={"access_token": "access", "refresh_token": "refresh", "expires_in": 1800}
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+        auth = SchwabAuth(s, client)
+        state = parse_qs(urlparse(auth.authorization_url()).query)["state"][0]
+        await auth.exchange_redirect(f"{returned}?code=test&state={state}")
+        body = parse_qs(requests[0].content.decode())
+        assert body["redirect_uri"] == [registered]
+        assert auth.vault.read()["access_token"] == "access"
+
+
+@pytest.mark.parametrize(
+    "returned",
+    [
+        "http://127.0.0.1/callback",
+        "https://example.com/callback",
+        "https://127.0.0.1:8182/callback",
+        "https://127.0.0.1/other",
+        "https://127.0.0.1/callback/",
+    ],
+)
+async def test_oauth_other_redirect_differences_remain_rejected(settings, returned):
+    s = auth_settings(settings)
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda _: pytest.fail("No token request allowed"))
+    ) as client:
+        auth = SchwabAuth(s, client)
+        state = parse_qs(urlparse(auth.authorization_url()).query)["state"][0]
+        with pytest.raises(AuthorizationRequired, match="OAUTH_REDIRECT_MISMATCH"):
+            await auth.exchange_redirect(f"{returned}?code=test&state={state}")
+
+
 async def test_schwab_quote_hour_aggregation_and_retry(settings):
     s = auth_settings(settings).model_copy(update={"schwab_history_adjustment": "UNADJUSTED"})
     calls, failures = [], []

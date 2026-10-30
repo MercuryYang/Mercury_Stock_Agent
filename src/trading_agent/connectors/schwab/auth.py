@@ -72,7 +72,12 @@ class SchwabAuth:
 
     async def exchange_redirect(self, redirect_url):
         parsed, expected = urlparse(redirect_url), urlparse(self.settings.schwab_redirect_uri)
-        if (parsed.scheme, parsed.netloc, parsed.path) != (expected.scheme, expected.netloc, expected.path):
+        # Browsers serialize an empty root path as '/'. Non-root paths must still match exactly.
+        if (parsed.scheme, parsed.netloc, parsed.path or "/") != (
+            expected.scheme,
+            expected.netloc,
+            expected.path or "/",
+        ):
             raise AuthorizationRequired("OAUTH_REDIRECT_MISMATCH")
         params, saved = parse_qs(parsed.query), self.state.read()
         if (
