@@ -9,6 +9,7 @@ from trading_agent.core.models import utcnow
 from trading_agent.notifications.service import NotificationRouter
 from trading_agent.persistence.schema import NAMES
 from trading_agent.persistence.store import Store
+from trading_agent.workflows.service import Workflow
 
 
 def test_migrations_reopen_and_schema(settings):
@@ -24,7 +25,7 @@ def test_migrations_reopen_and_schema(settings):
 
 
 @pytest.mark.postgres
-def test_postgres_migration_and_unique_upsert(settings):
+async def test_postgres_migration_and_unique_upsert(settings, config):
     url = os.getenv("TEST_DATABASE_URL")
     if not url:
         pytest.skip("TEST_DATABASE_URL is not configured")
@@ -38,6 +39,12 @@ def test_postgres_migration_and_unique_upsert(settings):
         with pytest.raises(RuntimeError, match="WORKFLOW_BUSY"):
             with store.singleton("test-lock"):
                 pass
+    workflow = Workflow(s, config, store)
+    result = await workflow.run()
+    assert result["status"] == "SUCCESS"
+    assert all(store.get("decisions", key)["action"] == "NO_ACTION" for key in result["decision_ids"])
+    assert all(n["status"] == "SENT" for n in store.list("notification_events"))
+    await workflow.aclose()
     store.engine.dispose()
 
 

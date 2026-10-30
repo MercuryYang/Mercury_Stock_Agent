@@ -51,10 +51,12 @@ class Store:
             if replace
             else stmt.on_conflict_do_nothing(index_elements=[table.c.id])
         )
+        # psycopg may report rowcount=-1 for INSERT; RETURNING is authoritative on both backends.
+        stmt = stmt.returning(table.c.id)
         if connection is not None:
-            return connection.execute(stmt).rowcount > 0
+            return connection.execute(stmt).scalar_one_or_none() is not None
         with self.engine.begin() as conn:
-            return conn.execute(stmt).rowcount > 0
+            return conn.execute(stmt).scalar_one_or_none() is not None
 
     def get(self, name, key):
         table = TABLES[name]
