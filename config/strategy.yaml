@@ -1,0 +1,7 @@
+version: strategies-v1
+indicators_version: indicators-v1
+strategies:
+  S01: {enabled: true, version: s01-v1}
+  S02: {enabled: true, version: s02-v1, volume_ratio_min: 1.5}
+  S03: {enabled: true, version: s03-v1, support_atr_distance: 1.0}
+  S04: {enabled: true, version: s04-v1, rsi_low: 30, rsi_high: 70}

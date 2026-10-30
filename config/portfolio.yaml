@@ -1,0 +1,7 @@
+version: portfolio-v1
+# Test symbols only. Live holdings are added automatically; confirm the watchlist before use.
+watchlist: [GOOG, QQQ]
+instruments:
+  GOOG: {asset_type: EQUITY, sector: null, leveraged: false, enabled: true}
+  QQQ: {asset_type: ETF, sector: null, leveraged: false, enabled: true}
+  SPY: {asset_type: ETF, sector: null, leveraged: false, enabled: true}

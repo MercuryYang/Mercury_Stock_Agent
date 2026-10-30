@@ -1,0 +1,11 @@
+version: app-v1
+benchmark: SPY
+timeframes: [1d, 1h]
+history_days: 450
+llm:
+  timeout_seconds: 90
+  max_retries: 2
+  max_turns: 8
+  temperature: 0.1
+  # Tool execution and JSON Schema output use separate SDK runs; always validate locally too.
+  structured_outputs: true

@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mercury-stock-agent"
+version = "0.1.0"
+description = "Auditable, read-only personal trading research assistant"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "pydantic-settings>=2.8,<3",
+  "sqlalchemy>=2.0,<3", "alembic>=1.15,<2", "psycopg[binary]>=3.2,<4",
+  "httpx>=0.28,<1", "openai-agents>=0.4,<1", "openai>=1.99,<3",
+  "pandas>=2.2,<3", "numpy>=2.0,<3", "TA-Lib>=0.6.5,<0.7",
+  "exchange-calendars>=4.11,<5", "apscheduler>=3.11,<4",
+  "cryptography>=44,<50", "pyyaml>=6,<7", "structlog>=25,<27", "tzdata>=2025.1", "portalocker>=3,<4",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3,<10", "pytest-asyncio>=1,<2", "pytest-cov>=6,<8", "ruff>=0.11,<1"]
+
+[project.scripts]
+trading-agent = "trading_agent.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trading_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["postgres: needs TEST_DATABASE_URL", "live: explicitly opt-in external services"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP"]

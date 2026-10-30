@@ -1,0 +1,33 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: trading
+          POSTGRES_PASSWORD: ci-only-test-password
+          POSTGRES_DB: trading_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U trading -d trading_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://trading:ci-only-test-password@localhost:5432/trading_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {version: "0.13.6", python-version: "3.12"}
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run pytest --cov=trading_agent --cov-report=term-missing
+      - name: Validate Compose and build application image
+        env:
+          ADMIN_API_KEY: ci-only-administration-key-at-least-32-characters
+          POSTGRES_PASSWORD: ci-only-test-password
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          docker build -f docker/Dockerfile -t mercury-stock-agent:ci .

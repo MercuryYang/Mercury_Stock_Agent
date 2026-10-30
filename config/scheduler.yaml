@@ -1,0 +1,7 @@
+version: scheduler-v1
+calendar: XNYS
+premarket_minutes_before_open: 45
+postmarket_minutes_after_close: 15
+intraday_interval_minutes: 10
+notification_cooldown_minutes: 60
+poll_seconds: 30
